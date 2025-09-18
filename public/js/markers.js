@@ -1,5 +1,5 @@
 function markers() {
-    fetch('/json/timetables.json')
+    fetch('https://vinfo-production.up.railway.app/api/timetables')
     .then(response => response.json())
     .then(data => {
         trainLayer.clearLayers();
