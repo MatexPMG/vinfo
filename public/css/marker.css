@@ -1,13 +1,13 @@
 .train-marker {
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 16;
+  height: 16;
 }
 
 .train-marker .circle {
   position: absolute;
-  width: 13px;
-  height: 13px;
+  width: 13;
+  height: 13;
   top: 0;
   left: 0;
 
@@ -17,8 +17,8 @@
 
 .train-marker .arrow {
   position: absolute;
-  width: 1px;
-  height: 0px;
+  width: 1;
+  height: 0;
   top: 50%;
   left: 50%;
 
