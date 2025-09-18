@@ -6,11 +6,11 @@ function markers() {
         trainLayer.clearLayers();
         
         const trains = data.vehiclePositions || data.data?.vehiclePositions;
-        const now = Math.floor(Date.now() / 1000);
-        const cutoff = now - (30 * 60);
+        //const now = Math.floor(Date.now() / 1000);
+        //const cutoff = now - (30 * 60);
 
         trains.forEach(train => {
-          if (train.lastUpdated >= cutoff) {
+          if (true) {
             const delay = Math.round(train.nextStop?.arrivalDelay / 60);
             const lat = train.lat;
             const lon = train.lon;
