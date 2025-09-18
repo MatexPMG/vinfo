@@ -2,9 +2,10 @@ function markers() {
     fetch('https://vinfo-production.up.railway.app/json/timetables.json')
     .then(response => response.json())
     .then(data => {
+        console.log(data);
         trainLayer.clearLayers();
         
-        const trains = data.data.vehiclePositions;
+        const trains = data.vehiclePositions || data.data?.vehiclePositions;
         const now = Math.floor(Date.now() / 1000);
         const cutoff = now - (30 * 60);
 
