@@ -1,28 +1,12 @@
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS (allow your frontend domain or '*' for all)
-app.use(cors());
-
 // Serve static frontend files
 app.use(express.static('public'));
-
-// API endpoint to get latest timetables JSON
-app.get('/api/timetables', (req, res) => {
-  fs.readFile('public/json/timetables.json', 'utf8', (err, data) => {
-    if (err) {
-      console.error('Error reading timetables.json:', err);
-      return res.status(500).json({ error: 'Failed to read timetables' });
-    }
-    res.setHeader('Content-Type', 'application/json');
-    res.send(data);
-  });
-});
 
 // GraphQL API URL and query
 const url = 'https://emma.mav.hu//otp2-backend/otp/routers/default/index/graphql';
@@ -74,7 +58,7 @@ const TIMES = {
   variables: {}
 };
 
-// Function to fetch and update timetables.json
+// Function to fetch and save timetables.json
 async function timetables() {
   try {
     const res = await fetch(url, {
@@ -89,10 +73,10 @@ async function timetables() {
 
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
 
-    const data = await res.json();
-    const size = Buffer.byteLength(JSON.stringify(data, null, 2)) / 1000;
+    const data = await res.text(); // text because you want raw response
+    const size = Buffer.byteLength(data, 'utf8') / 1000;
 
-    fs.writeFile('public/json/timetables.json', JSON.stringify(data, null, 2), (err) => {
+    fs.writeFile('public/json/timetables.json', data, err => {
       if (err) console.error('timetables write ERROR:', err);
       else console.log(`timetables OK, downloaded ${size} kB`);
     });
@@ -101,7 +85,7 @@ async function timetables() {
   }
 }
 
-// Initial fetch and set interval
+// Initial fetch + interval every minute
 timetables();
 setInterval(timetables, 60000);
 
