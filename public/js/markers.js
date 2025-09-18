@@ -2,7 +2,6 @@ function markers() {
     fetch('https://vinfo-production.up.railway.app/json/timetables.json')
     .then(response => response.json())
     .then(data => {
-        console.log(data);
         trainLayer.clearLayers();
         
         const trains = data.vehiclePositions || data.data?.vehiclePositions;
