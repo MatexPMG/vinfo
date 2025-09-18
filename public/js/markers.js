@@ -6,11 +6,8 @@ function markers() {
         trainLayer.clearLayers();
         
         const trains = data.vehiclePositions || data.data?.vehiclePositions;
-        //const now = Math.floor(Date.now() / 1000);
-        //const cutoff = now - (30 * 60);
 
         trains.forEach(train => {
-          if (true) {
             const delay = Math.round(train.nextStop?.arrivalDelay / 60);
             const lat = train.lat;
             const lon = train.lon;
@@ -18,8 +15,9 @@ function markers() {
             const speed = Math.round(train.speed * 3.6);
             const name = train.trip?.tripShortName || '';
             const dest = train.trip?.tripHeadsign || '';
-            const UIC = train.vehicleId.split(':')[1];
-            const loc = `${UIC.slice(5,8)} ${UIC.slice(8,11)}`;
+            const vehicleId = train.vehicleId || '';
+            const UIC = vehicleId.includes(':') ? vehicleId.split(':')[1] : vehicleId;
+            const loc = UIC ? `${UIC.slice(5,8)} ${UIC.slice(8,11)}` : '';
             const searchId = `${name} | ${loc}`;
 
             const marker = L.marker([lat, lon], {
@@ -113,7 +111,7 @@ function markers() {
             if (selectedTrainId === train.vehicleId && selected) {
                 selected.setLatLng([lat, lon]);
             }
-        }});
+        });
     });
 }
 
