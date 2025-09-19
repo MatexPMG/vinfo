@@ -1,101 +1,114 @@
 const express = require('express');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Serve static frontend files
+// Serve static frontend files from "public"
 app.use(express.static('public'));
 
-// GraphQL API URL and query
+// Ensure json directory exists
+const jsonDir = path.join(__dirname, 'public', 'json');
+if (!fs.existsSync(jsonDir)) {
+  fs.mkdirSync(jsonDir, { recursive: true });
+}
+
+// Output file path
+const outputFile = path.join(jsonDir, 'timetables.json');
+
+// GraphQL API endpoint
 const url = 'https://emma.mav.hu//otp2-backend/otp/routers/default/index/graphql';
 
-const TIMES = {
-  query: `
-    {
-      vehiclePositions(
-        swLat: 45.74573822516341,
-        swLon: 16.21031899279769,
-        neLat: 48.56368661139524,
-        neLon: 22.906741803509043,
-        modes: [RAIL, TRAMTRAIN]
-      ) {
-        vehicleId
-        lat
-        lon
-        heading
-        speed
-        lastUpdated
-        nextStop {
-          arrivalDelay
+// GraphQL query
+const query = `
+{
+  vehiclePositions(
+    swLat: 45.74573822516341,
+    swLon: 16.21031899279769,
+    neLat: 48.56368661139524,
+    neLon: 22.906741803509043,
+    modes: [RAIL, TRAMTRAIN]
+  ) {
+    vehicleId
+    lat
+    lon
+    heading
+    speed
+    lastUpdated
+    nextStop {
+      arrivalDelay
+    }
+    trip {
+      alerts(types: [ROUTE, TRIP]) {
+        alertDescriptionText
+      }
+      tripShortName
+      tripHeadsign
+      stoptimes {
+        stop {
+          name
+          lat
+          lon
+          platformCode
         }
-        trip {
-          alerts(types: [ROUTE, TRIP]) {
-            alertDescriptionText
-          }
-          tripShortName
-          tripHeadsign
-          stoptimes {
-            stop {
-              name
-              lat
-              lon
-              platformCode
-            }
-            scheduledArrival
-            arrivalDelay
-            scheduledDeparture
-            departureDelay
-          }
-          tripGeometry {
-            points
-          }
-        }
+        scheduledArrival
+        arrivalDelay
+        scheduledDeparture
+        departureDelay
+      }
+      tripGeometry {
+        points
       }
     }
-  `,
-  variables: {}
-};
+  }
+}
+`;
 
-// store the cached data
-let cachedData = null;
+// Variable to store latest data in memory
+let latestData = null;
 
-// function to update cached data
-async function fetchData() {
+// Function to fetch data and save to timetables.json
+async function fetchAndSave() {
   try {
-    const apiRes = await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'User-Agent': 'Mozilla/5.0',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(TIMES)
+      body: JSON.stringify({ query }),
     });
 
-    if (!apiRes.ok) throw new Error(`HTTP error ${apiRes.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP error ${res.status}`);
+    }
 
-    cachedData = await apiRes.json();
-    console.log('✅ Updated timetable cache at', new Date().toISOString());
+    const data = await res.json();
+    latestData = data; // store in memory
+    fs.writeFileSync(outputFile, JSON.stringify(data, null, 2));
+    console.log(`[${new Date().toISOString()}] Updated timetables.json`);
   } catch (err) {
-    console.error('TIMES Request error:', err);
+    console.error('Error fetching data:', err);
   }
 }
 
-// update every 60 sec
-setInterval(fetchData, 60 * 1000);
-// run immediately on startup too
-fetchData();
+// Fetch immediately on startup
+fetchAndSave();
 
-// endpoint to serve cached data
-app.get('/json/timetables.json', (req, res) => {
-  if (cachedData) {
-    res.json(cachedData);
+// Then update every 60 seconds
+setInterval(fetchAndSave, 60 * 1000);
+
+// API endpoint for frontend
+app.get('/api/timetables', (req, res) => {
+  if (latestData) {
+    res.json(latestData);
   } else {
-    res.status(503).json({ error: 'No data available yet' });
+    res.status(503).json({ error: 'Data not available yet' });
   }
 });
 
-// Start server
 app.listen(port, () => {
-  console.log(`🚂 Server running on port ${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
