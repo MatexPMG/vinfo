@@ -57,17 +57,8 @@ const TIMES = {
   variables: {}
 };
 
-// Simple in-memory cache (60s)
-let cache = null;
-let lastFetch = 0;
-
-// Endpoint to serve timetables
+// Endpoint to serve timetables (always fresh)
 app.get('/json/timetables.json', async (req, res) => {
-  const now = Date.now();
-  if (cache && now - lastFetch < 60000) {
-    return res.json(cache);
-  }
-
   try {
     const apiRes = await fetch(url, {
       method: 'POST',
@@ -81,8 +72,6 @@ app.get('/json/timetables.json', async (req, res) => {
     if (!apiRes.ok) throw new Error(`HTTP error ${apiRes.status}`);
 
     const data = await apiRes.json();
-    cache = data;
-    lastFetch = now;
     res.json(data);
   } catch (err) {
     console.error('TIMES Request error:', err);
