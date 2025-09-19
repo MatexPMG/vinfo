@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const fetch = require('node-fetch');
 
 const app = express();
@@ -58,38 +57,40 @@ const TIMES = {
   variables: {}
 };
 
-// Function to fetch and save timetables.json
-async function timetables() {
+// Simple in-memory cache (60s)
+let cache = null;
+let lastFetch = 0;
+
+// Endpoint to serve timetables
+app.get('/json/timetables.json', async (req, res) => {
+  const now = Date.now();
+  if (cache && now - lastFetch < 60000) {
+    return res.json(cache);
+  }
+
   try {
-    const res = await fetch(url, {
+    const apiRes = await fetch(url, {
       method: 'POST',
       headers: {
         'User-Agent': 'Mozilla/5.0',
-        'access-control-allow-origin': 'https://emma.mav.hu',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(TIMES)
     });
 
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    if (!apiRes.ok) throw new Error(`HTTP error ${apiRes.status}`);
 
-    const data = await res.text(); // text because you want raw response
-    const size = Buffer.byteLength(data, 'utf8') / 1000;
-
-    fs.writeFile('public/json/timetables.json', data, err => {
-      if (err) console.error('timetables write ERROR:', err);
-      else console.log(`timetables OK, downloaded ${size} kB`);
-    });
+    const data = await apiRes.json();
+    cache = data;
+    lastFetch = now;
+    res.json(data);
   } catch (err) {
     console.error('TIMES Request error:', err);
+    res.status(500).json({ error: 'Failed to fetch timetables' });
   }
-}
-
-// Initial fetch + interval every minute
-timetables();
-setInterval(timetables, 60000);
+});
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server OK on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
