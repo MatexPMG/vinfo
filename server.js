@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Serve static frontend files from "public"
+// Serve static frontend files
 app.use(express.static('public'));
 
 // GraphQL API endpoint
@@ -55,10 +55,11 @@ const query = `
 }
 `;
 
-// Variable to store latest data in memory
+// In-memory storage
 let latestData = null;
+let lastUpdated = null;
 
-// Function to fetch latest vehicle positions
+// Fetch function
 async function fetchLatestData() {
   try {
     const res = await fetch(url, {
@@ -70,13 +71,12 @@ async function fetchLatestData() {
       body: JSON.stringify({ query }),
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
 
     const data = await res.json();
     latestData = data;
-    console.log(`[${new Date().toISOString()}] Updated vehicle positions`);
+    lastUpdated = new Date().toISOString();
+    console.log(`[${lastUpdated}] Updated vehicle positions`);
   } catch (err) {
     console.error('Error fetching vehicle positions:', err);
   }
@@ -88,10 +88,13 @@ fetchLatestData();
 // Refresh every 60 seconds
 setInterval(fetchLatestData, 60 * 1000);
 
-// API endpoint for frontend
+// API endpoint
 app.get('/api/timetables', (req, res) => {
   if (latestData) {
-    res.json(latestData);
+    res.json({
+      timestamp: lastUpdated,
+      data: latestData,
+    });
   } else {
     res.status(503).json({ error: 'Data not available yet' });
   }

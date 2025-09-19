@@ -1,12 +1,11 @@
 function markers() {
-  fetch('https://vinfo-production.up.railway.app/api/timetables')
-    .then(response => response.json())
+  fetch(`/api/timetables?t=${Date.now()}`) // cache-busting
+    .then(res => res.json())
     .then(json => {
       trainLayer.clearLayers();
 
       const trains = json.data?.vehiclePositions || [];
       const timestamp = json.timestamp;
-
       console.log('Data last updated at:', timestamp);
 
         trains.forEach(train => {
