@@ -57,8 +57,11 @@ const TIMES = {
   variables: {}
 };
 
-// Endpoint to serve timetables (always fresh)
-app.get('/json/timetables.json', async (req, res) => {
+// store the cached data
+let cachedData = null;
+
+// function to update cached data
+async function fetchData() {
   try {
     const apiRes = await fetch(url, {
       method: 'POST',
@@ -71,15 +74,28 @@ app.get('/json/timetables.json', async (req, res) => {
 
     if (!apiRes.ok) throw new Error(`HTTP error ${apiRes.status}`);
 
-    const data = await apiRes.json();
-    res.json(data);
+    cachedData = await apiRes.json();
+    console.log('✅ Updated timetable cache at', new Date().toISOString());
   } catch (err) {
     console.error('TIMES Request error:', err);
-    res.status(500).json({ error: 'Failed to fetch timetables' });
+  }
+}
+
+// update every 60 sec
+setInterval(fetchData, 60 * 1000);
+// run immediately on startup too
+fetchData();
+
+// endpoint to serve cached data
+app.get('/json/timetables.json', (req, res) => {
+  if (cachedData) {
+    res.json(cachedData);
+  } else {
+    res.status(503).json({ error: 'No data available yet' });
   }
 });
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`🚂 Server running on port ${port}`);
 });
