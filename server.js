@@ -1,22 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Serve static frontend files from "public"
 app.use(express.static('public'));
-
-// Ensure json directory exists
-const jsonDir = path.join(__dirname, 'public', 'json');
-if (!fs.existsSync(jsonDir)) {
-  fs.mkdirSync(jsonDir, { recursive: true });
-}
-
-// Output file path
-const outputFile = path.join(jsonDir, 'timetables.json');
 
 // GraphQL API endpoint
 const url = 'https://emma.mav.hu//otp2-backend/otp/routers/default/index/graphql';
@@ -69,8 +58,8 @@ const query = `
 // Variable to store latest data in memory
 let latestData = null;
 
-// Function to fetch data and save to timetables.json
-async function fetchAndSave() {
+// Function to fetch latest vehicle positions
+async function fetchLatestData() {
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -86,19 +75,18 @@ async function fetchAndSave() {
     }
 
     const data = await res.json();
-    latestData = data; // store in memory
-    fs.writeFileSync(outputFile, JSON.stringify(data, null, 2));
-    console.log(`[${new Date().toISOString()}] Updated timetables.json`);
+    latestData = data;
+    console.log(`[${new Date().toISOString()}] Updated vehicle positions`);
   } catch (err) {
-    console.error('Error fetching data:', err);
+    console.error('Error fetching vehicle positions:', err);
   }
 }
 
 // Fetch immediately on startup
-fetchAndSave();
+fetchLatestData();
 
-// Then update every 60 seconds
-setInterval(fetchAndSave, 60 * 1000);
+// Refresh every 60 seconds
+setInterval(fetchLatestData, 60 * 1000);
 
 // API endpoint for frontend
 app.get('/api/timetables', (req, res) => {
