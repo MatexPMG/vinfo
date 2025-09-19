@@ -1,5 +1,5 @@
 function markers() {
-  fetch(`/api/timetables?t=${Date.now()}`) // cache-busting
+  fetch('https://bck-production-fec3.up.railway.app/api/timetables')
     .then(res => res.json())
     .then(json => {
       trainLayer.clearLayers();
@@ -8,7 +8,7 @@ function markers() {
       const timestamp = json.timestamp;
       console.log('Data last updated at:', timestamp);
 
-        trains.forEach(train => {
+      trains.forEach(train => {
             const delay = Math.round(train.nextStop?.arrivalDelay / 60);
             const lat = train.lat;
             const lon = train.lon;
