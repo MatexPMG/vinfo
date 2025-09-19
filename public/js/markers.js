@@ -1,10 +1,13 @@
 function markers() {
-    fetch('https://vinfo-production.up.railway.app/json/timetables.json')
+  fetch('https://vinfo-production.up.railway.app/api/timetables')
     .then(response => response.json())
-    .then(data => {
-        trainLayer.clearLayers();
-        
-        const trains = data.vehiclePositions || data.data?.vehiclePositions;
+    .then(json => {
+      trainLayer.clearLayers();
+
+      const trains = json.data?.vehiclePositions || [];
+      const timestamp = json.timestamp;
+
+      console.log('Data last updated at:', timestamp);
 
         trains.forEach(train => {
             const delay = Math.round(train.nextStop?.arrivalDelay / 60);
